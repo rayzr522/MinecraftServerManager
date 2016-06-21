@@ -12,7 +12,7 @@ restart: Stops and then starts the server
 
 cmd: Executes a server command
 
-console: Opens the server console
+console: Opens the server console (note, to exit the console to CTRL-A D)
 
 config: Opens the config file
 
