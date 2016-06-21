@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Config Location
+SETTINGS_DIR="$HOME/.mcsm"
+CONFIG="$SETTINGS_DIR/settings.cfg"
+
+f_setup() {
+
+    if [ ! -d "$SETTINGS_DIR" ]; then
+        mkdir "$SETTINGS_DIR"
+        echo "Making dir..."
+    fi
+
+    if [ ! -f "$CONFIG" ]; then
+        touch $CONFIG
+        CONFIG_TEMPLATE="JAVA="$JAVA_HOME"\nserver_name="YourServer"\nservice_name="minecraftServer"\nserver_home_directory="/your/server/directory"\nserver_jar="spigot-1.10.jar"\nmax_memory="2048M"\nextra_params="nogui"\ntime_before_shutdown=30\n"
+        echo -en $CONFIG_TEMPLATE > $CONFIG
+        echo "No config file found, generating new one..."
+        exit 0
+    fi
+
+    source "$CONFIG"
+
+}
+
+f_start() {
+
+    export JAVA_HOME="$JAVA"
+    log "Starting server..."
+    cd $server_home_directory && screen -h 512 -dmS $service_name java -jar -Xmx$max_memory $server_jar $extra_params
+    log "$server_name started"
+
+}
+
+f_stop() {
+
+    log "Stopping $server_name..."
+    f_cmd "say The server will be shutting down in $time_before_shutdown seconds"
+    sleep $time_before_shutdown
+    f_cmd "save-all"
+    f_cmd "stop"
+    log "$server_name stopped"
+
+}
+
+f_cmd() {
+
+    screen -S "$service_name" -p 0 -X stuff "`printf "$1\r"`"
+
+}
+
+f_console() {
+
+    screen -r "$service_name"
+
+}
+
+log() {
+
+    echo "[ServerManager] $1"
+
+}
+
+#Start of script
+f_setup
+
+case "$1" in
+  start)
+        f_start
+        ;;
+  stop)
+        f_stop
+        ;;
+  restart)
+    f_stop
+    sleep 1
+    f_start
+    ;;
+  cmd)
+    if [ $# -gt 1 ]; then
+        shift
+        f_cmd "$*"
+    else
+        echo "Please specify a command (e.g. 'save-all')"
+    fi
+    ;;
+  console)
+    f_console
+    ;;
+  config)
+    open "$CONFIG"
+    ;;
+  *)
+    echo
+    echo "<###>----------------------------------------------------------<###>"
+    echo
+    echo "Welcome to Minecraft Server Manager!"
+    echo "Written by Rayzr522"
+    echo "Usage: mcsm <start|stop|restart|cmd <command>|console|config>"
+    echo
+    echo "<###>----------------------------------------------------------<###>"
+    echo
+    exit 1
+    ;;
+esac
+
+exit 0
