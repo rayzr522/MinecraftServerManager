@@ -1,104 +1,126 @@
 #!/bin/bash
 
+PROG="$(basename "$0")"
+
 # Config Location
-SETTINGS_DIR="$HOME/.mcsm"
+SETTINGS_DIR="$HOME/.config/mcsm"
 CONFIG="$SETTINGS_DIR/settings.cfg"
 
-f_setup() {
-
-    if [ ! -d "$SETTINGS_DIR" ]; then
-        mkdir "$SETTINGS_DIR"
-        echo "Making dir..."
-    fi
-
-    if [ ! -f "$CONFIG" ]; then
-        touch $CONFIG
-        CONFIG_TEMPLATE="JAVA="$JAVA_HOME"\nserver_name="YourServer"\nservice_name="minecraftServer"\nserver_home_directory="/your/server/directory"\nserver_jar="spigot-1.10.jar"\nmax_memory="2048M"\nextra_params="nogui"\ntime_before_shutdown=30\n"
-        echo -en $CONFIG_TEMPLATE > $CONFIG
-        echo "No config file found, generating new one..."
-        exit 0
-    fi
-
-    source "$CONFIG"
-
-}
-
-f_start() {
-
-    export JAVA_HOME="$JAVA"
-    log "Starting server..."
-    cd $server_home_directory && screen -h 512 -dmS $service_name java -jar -Xmx$max_memory $server_jar $extra_params
-    log "$server_name started"
-
-}
-
-f_stop() {
-
-    log "Stopping $server_name..."
-    f_cmd "say The server will be shutting down in $time_before_shutdown seconds"
-    sleep $time_before_shutdown
-    f_cmd "save-all"
-    f_cmd "stop"
-    log "$server_name stopped"
-
-}
-
-f_cmd() {
-
-    screen -S "$service_name" -p 0 -X stuff "`printf "$1\r"`"
-
-}
-
-f_console() {
-
-    screen -r "$service_name"
-
-}
-
+# General utility methods
 log() {
+  echo "$(tput setaf 1)[$(tput setaf 3)MCSM$(tput setaf 1)]$(tput sgr0) $(tput bold)$*$(tput sgr0)"
+}
 
-    echo "[ServerManager] $1"
+fail() {
+  echo "$(tput setaf 1)$*" 1>&2
+  exit 1
+}
 
+# MCSM system
+mcsm::setup() {
+  if [ ! -d "$SETTINGS_DIR" ]; then
+    mkdir "$SETTINGS_DIR"
+    log "Making dir..."
+  fi
+
+  if [ ! -f "$CONFIG" ]; then
+    touch "$CONFIG"
+    log "No config file found, generating new one..."
+    cat > "$CONFIG" << END_CONFIG_TEMPLATE
+server_name="YourServer"
+service_name="minecraftServer"
+server_home_directory="/your/server/directory"
+server_jar="spigot-1.12.2.jar"
+max_memory="2048M"
+extra_params="nogui"
+time_before_shutdown=30
+END_CONFIG_TEMPLATE
+
+    log "Config file generated using template config. Please edit via '$PROG config'."
+    exit 1
+  fi
+
+  source "$CONFIG"
+}
+
+mcsm::start() {
+  log "Starting server..."
+
+  cd "$server_home_directory" || exit 1
+
+  if [ -x start.sh ]; then
+    screen -h 512 -dmS "$service_name" ./start.sh
+    log "$server_name started (using custom startup script)"
+  else
+    screen -h 512 -dmS "$service_name" java -jar -Xmx"$max_memory" "$server_jar" "$extra_params"
+    log "$server_name started"
+  fi
+}
+
+mcsm::stop() {
+  log "Stopping $server_name..."
+
+  if [ "$time_before_shutdown" ] && [ "$time_before_shutdown" -gt 0 ]; then
+    mcsm::exec "say The server will be shutting down in $time_before_shutdown seconds"
+    sleep "$time_before_shutdown"
+  fi
+  mcsm::exec "save-all"
+  mcsm::exec "stop"
+  log "$server_name stopped"
+}
+
+mcsm::exec() {
+  screen -S "$service_name" -p 0 -X stuff "$(printf "%s\\r" "$1")"
+}
+
+mcsm::console() {
+  screen -r "$service_name"
+}
+
+mcsm::log() {
+  logfile="$server_home_directory/logs/latest.log"
+  [ ! -f "$logfile" ]
+  less "$server_home_directory/logs/latest.log"
 }
 
 #Start of script
-f_setup
+mcsm::setup
 
 case "$1" in
   start)
-        f_start
-        ;;
+    mcsm::start
+    ;;
   stop)
-        f_stop
-        ;;
+    mcsm::stop
+    ;;
   restart)
-    f_stop
-    sleep 1
-    f_start
+    mcsm::stop
+    sleep 0.5
+    mcsm::start
     ;;
   cmd)
-    if [ $# -gt 1 ]; then
-        shift
-        f_cmd "$*"
-    else
-        echo "Please specify a command (e.g. 'save-all')"
+    if [ $# -lt 1 ]; then
+      echo "Please specify a command (e.g. 'save-all')"
+      exit 1
     fi
+
+    shift
+    mcsm::exec "$*"
     ;;
   console)
-    f_console
+    mcsm::console
+    ;;
+  log)
+    mcsm::log
     ;;
   config)
-    open "$CONFIG"
+    "${VISUAL:-nano}" "$CONFIG"
     ;;
   *)
     echo
-    echo "<###>----------------------------------------------------------<###>"
-    echo
     echo "Welcome to Minecraft Server Manager!"
     echo "Written by Rayzr522"
-    echo "Usage: mcsm <start|stop|restart|cmd <command>|console|config>"
-    echo
-    echo "<###>----------------------------------------------------------<###>"
+    echo "Usage: $PROG <start|stop|restart|cmd <command>|console|log|config>"
     echo
     exit 1
     ;;
