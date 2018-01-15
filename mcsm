@@ -19,7 +19,7 @@ fail() {
 # MCSM system
 mcsm::setup() {
   if [ ! -d "$SETTINGS_DIR" ]; then
-    mkdir "$SETTINGS_DIR"
+    mkdir -p "$SETTINGS_DIR"
     log "Making dir..."
   fi
 
