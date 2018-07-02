@@ -1,4 +1,6 @@
 # Minecraft Server Manager
+[![Patreon](http://ionicabizau.github.io/badges/patreon.svg)](https://patreon.com/Rayzr522)
+[![Discord Badge](https://discordapp.com/api/guilds/282207139752050688/embed.png)](https://discord.io/rayzrdevofficial)
 
 > A simple server manager script for Minecraft.
 
