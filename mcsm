@@ -1,10 +1,34 @@
 #!/bin/bash
 
+# The name of the program.
 PROG="$(basename "$0")"
 
-# Config Location
+# Config location
 SETTINGS_DIR="$HOME/.config/mcsm"
 CONFIG="$SETTINGS_DIR/settings.cfg"
+
+# Config template
+CONFIG_TEMPLATE="$(cat << END_CONFIG_TEMPLATE
+# The name of your server. This is for display-purposes only.
+server_name="My Minecraft Server"
+# The name of the screen service.
+service_name="minecraftServer"
+# The root directory of your server.
+server_home_directory="/your/server/directory"
+# The JAR file to run for your server.
+# If there is a 'start.sh' script in your server home directory,
+# then the server_jar will be ignored.
+server_jar="spigot-1.12.2.jar"
+# The maximum amount of memory to use.
+max_memory="2048M"
+# Extra parameters to be passed to the JAR file. This is also
+# ignored if a 'start.sh' script is found.
+extra_params="nogui"
+# How many seconds to wait before shutting the down when
+# running 'mcsm stop'.
+time_before_shutdown=30
+END_CONFIG_TEMPLATE
+)"
 
 # General utility methods
 log() {
@@ -26,15 +50,7 @@ mcsm::setup() {
   if [[ ! -f "$CONFIG" ]]; then
     touch "$CONFIG"
     log "No config file found, generating new one..."
-    cat > "$CONFIG" << END_CONFIG_TEMPLATE
-server_name="YourServer"
-service_name="minecraftServer"
-server_home_directory="/your/server/directory"
-server_jar="spigot-1.12.2.jar"
-max_memory="2048M"
-extra_params="nogui"
-time_before_shutdown=30
-END_CONFIG_TEMPLATE
+    echo "$CONFIG_TEMPLATE" > "$CONFIG"
 
     log "Config file generated using template config. Please edit via '$PROG config'."
     exit 1
