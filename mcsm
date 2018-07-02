@@ -12,18 +12,18 @@ log() {
 }
 
 fail() {
-  echo "$(tput setaf 1)$*" 1>&2
+  log "$(tput setaf 1)$*" 1>&2
   exit 1
 }
 
 # MCSM system
 mcsm::setup() {
-  if [ ! -d "$SETTINGS_DIR" ]; then
+  if [[ ! -d "$SETTINGS_DIR" ]]; then
     mkdir -p "$SETTINGS_DIR"
     log "Making dir..."
   fi
 
-  if [ ! -f "$CONFIG" ]; then
+  if [[ ! -f "$CONFIG" ]]; then
     touch "$CONFIG"
     log "No config file found, generating new one..."
     cat > "$CONFIG" << END_CONFIG_TEMPLATE
@@ -48,7 +48,7 @@ mcsm::start() {
 
   cd "$server_home_directory" || exit 1
 
-  if [ -x start.sh ]; then
+  if [[ -x start.sh ]]; then
     screen -h 512 -dmS "$service_name" ./start.sh
     log "$server_name started (using custom startup script)"
   else
@@ -60,7 +60,7 @@ mcsm::start() {
 mcsm::stop() {
   log "Stopping $server_name..."
 
-  if [ "$time_before_shutdown" ] && [ "$time_before_shutdown" -gt 0 ]; then
+  if [[ "$time_before_shutdown" ]] && [[ "$time_before_shutdown" -gt 0 ]]; then
     mcsm::exec "say The server will be shutting down in $time_before_shutdown seconds"
     sleep "$time_before_shutdown"
   fi
@@ -79,8 +79,20 @@ mcsm::console() {
 
 mcsm::log() {
   logfile="$server_home_directory/logs/latest.log"
-  [ ! -f "$logfile" ]
+  [[ ! -f "$logfile" ]] && fail "Could not find latest.log"
   less "$server_home_directory/logs/latest.log"
+}
+
+mcsm::isRunning() {
+  if screen -q -S "$service_name" -Q title >/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+mcsm::ensureRunning() {
+  mcsm::isRunning || fail "The server is not running."
 }
 
 #Start of script
@@ -88,26 +100,37 @@ mcsm::setup
 
 case "$1" in
   start)
+    if mcsm::isRunning; then
+      fail "Server is already running!"
+    fi
+
     mcsm::start
     ;;
   stop)
+    mcsm::ensureRunning
     mcsm::stop
     ;;
   restart)
-    mcsm::stop
-    sleep 0.5
+    if mcsm::isRunning; then
+      mcsm::stop
+      sleep 0.5
+    else
+      log "Server was not running, starting immediately"
+    fi
     mcsm::start
     ;;
   cmd)
+    mcsm::ensureRunning
+
     if [ $# -lt 1 ]; then
-      echo "Please specify a command (e.g. 'save-all')"
-      exit 1
+      fail "Please specify a command (e.g. 'save-all')"
     fi
 
     shift
     mcsm::exec "$*"
     ;;
   console)
+    mcsm::ensureRunning
     mcsm::console
     ;;
   log)
@@ -117,13 +140,34 @@ case "$1" in
     "${VISUAL:-nano}" "$CONFIG"
     ;;
   *)
+    # bold
+    BOLD="$(tput bold)"
+    # reset
+    R="$(tput sgr0)"
+    # main color - yellow
+    MAIN="$(tput setaf 3)"
+    # light color - gray
+    LIGHT="$(tput setaf 7)"
+    # decorator color - red
+    DECO="$(tput setaf 1)"
     echo
-    echo "Welcome to Minecraft Server Manager!"
-    echo "Written by Rayzr522"
-    echo "Usage: $PROG <start|stop|restart|cmd <command>|console|log|config>"
+    echo "${DECO}${BOLD}===${R} Welcome to ${MAIN}Minecraft Server Manager!${R} ${DECO}${BOLD}===${R}"
+    echo "${DECO}${BOLD}>>>>${R} Written by ${MAIN}Rayzr522${R} ${DECO}${BOLD}||${R} ${LIGHT}git.io/mcsm${R} ${DECO}${BOLD}<<<<${R}"
+    echo "-| ${LIGHT}git.io/rayzr${R}"
+    echo "-| ${LIGHT}patreon.com/rayzr522${R}"
+    echo "-| ${LIGHT}discord.io/rayzr${R}"
+    echo "${DECO}${BOLD}?${R} ${LIGHT}For support, join my Discord: join.rayzr.tech${R}"
+    echo
+    echo "${BOLD}Usage:${R} $PROG <command>"
+    echo
+    echo "${BOLD}Commands:${R}"
+    echo "  start         ${DECO}|${R} starts the server"
+    echo "  stop          ${DECO}|${R} stops the server"
+    echo "  restart       ${DECO}|${R} restarts the server"
+    echo "  cmd <command> ${DECO}|${R} executes the given command in console"
+    echo "  log           ${DECO}|${R} opens the log file"
+    echo "  config        ${DECO}|${R} opens the config file in your \$VISUAL editor (nano is default)"
     echo
     exit 1
     ;;
 esac
-
-exit 0
