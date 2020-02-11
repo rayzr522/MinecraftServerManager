@@ -172,7 +172,7 @@ case "$1" in
     echo "-| ${LIGHT}git.io/rayzr${R}"
     echo "-| ${LIGHT}patreon.com/rayzr522${R}"
     echo "-| ${LIGHT}discord.io/rayzr${R}"
-    echo "${DECO}${BOLD}?${R} ${LIGHT}For support, join my Discord: join.rayzr.tech${R}"
+    echo "${DECO}${BOLD}?${R} ${LIGHT}For support, join my Discord: https://rayzr.dev/join${R}"
     echo
     echo "${BOLD}Usage:${R} $PROG <command>"
     echo
