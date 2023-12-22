@@ -1,13 +1,11 @@
 # Minecraft Server Manager
-[![Patreon](http://ionicabizau.github.io/badges/patreon.svg)](https://patreon.com/Rayzr522)
-[![Discord Badge](https://discordapp.com/api/guilds/282207139752050688/embed.png)](https://discord.io/rayzrdevofficial)
 
 > A simple server manager script for Minecraft.
 
 This allows you to start, stop, and control your Minecraft server with a few simple keystrokes, and it's all run in the background via `screen`.
 
-* [Usage](#Usage)
-* [Installation](#Installation)
+- [Usage](#Usage)
+- [Installation](#Installation)
 
 ## Usage
 
@@ -33,7 +31,7 @@ mcsm <start|stop|restart|cmd <command>|console|log|config>
 
 ### `console`
 
-> Opens the server console by resuming the `screen` session. *Note: to exit the console, do `C-A D`.*
+> Opens the server console by resuming the `screen` session. _Note: to exit the console, do `C-A D`._
 
 ### `config`
 
@@ -66,7 +64,3 @@ ln -s "$(pwd)"/mcsm /usr/local/bin/mcsm
 ```
 
 Then, to update MinecraftServerManager in the future, just `cd` into the MinecraftServerManager folder that you cloned from GitHub and run `git pull`.
-
-## Join Me
-
-[![Discord Badge](https://github.com/Rayzr522/ProjectResources/raw/master/RayzrDev/badge-small.png)](https://discord.io/rayzrdevofficial)
